@@ -25,7 +25,7 @@ export default function Home() {
     }  
   };  
 
-  const handleSignOut = (signOut: () => void) => {  
+  const handleSignOut = (signOut: () => void = () => {}) => {  
     // 清除本地存儲中的 token 或其他認證信息  
     localStorage.removeItem('authToken'); // 假設 token 存儲在 localStorage 中  
     sessionStorage.clear(); // 清除 sessionStorage  
