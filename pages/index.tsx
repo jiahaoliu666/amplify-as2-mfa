@@ -3,7 +3,7 @@ import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';  
 
 export default function Home() {  
-  const [userEmail, setUserEmail] = useState(null);  
+  const [userEmail, setUserEmail] = useState<string | null>(null);  
 
   const handleLogin = async () => {  
     if (userEmail) {  
@@ -25,7 +25,7 @@ export default function Home() {
     }  
   };  
 
-  const handleSignOut = (signOut) => {  
+  const handleSignOut = (signOut: () => void) => {  
     // 清除本地存儲中的 token 或其他認證信息  
     localStorage.removeItem('authToken'); // 假設 token 存儲在 localStorage 中  
     sessionStorage.clear(); // 清除 sessionStorage  
