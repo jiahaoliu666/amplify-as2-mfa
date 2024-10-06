@@ -1,0 +1,104 @@
+
+
+
+AS2 使用App模式 ，在網頁新增創建好的U R L可以進行複製
+出現error 回應給相關團隊
+進入 jiahao 的串流URL
+新增版本歷史記錄
+
+----
+該如何登入驗證成功後，根據下方代碼中指定的 Stacks和Fleets的AppStream 2.0 CreateStreamingURL，並提取使用者登入時輸入的電子郵件，同時將此用戶輸入的email作為Appstream2.0創建串流URL的User ID，最後將用此userid創建好的 URL進行登入後的重定向
+將下方代碼將上方前端代碼進行整合，並整理完整不會報錯的代碼，使用繁體回答
+
+
+
+jiahaoliu@metaage.com.tw
+
+https://appstream2.ap-northeast-1.aws.amazon.com/authenticate?parameters=eyJ0eXBlIjoiRU5EX1VTRVIiLCJleHBpcmVzIjoiMTcyODE0NTIzOCIsImF3c0FjY291bnRJZCI6IjY0NzM1MDM0MDU1OCIsInVzZXJJZCI6ImppYWhhb2xpdUBtZXRhYWdlLmNvbS50dyIsImNhdGFsb2dTb3VyY2UiOiJzdGFjay9EZXNrdG9wIiwiZmxlZXRSZWYiOiJmbGVldC9EZXNrdG9wIiwiYXBwbGljYXRpb25JZCI6IiIsInVzZXJDb250ZXh0IjoiIiwibWF4VXNlckR1cmF0aW9uSW5TZWNzIjoiNTc2MDAifQ%3D%3D&signature=uUkJ2Z97WyVGea%2BpBI4bKPfavFkTHth7zhjK3OExLCo%3D
+
+
+
+unichen@metaage.com.tw
+https://appstream2.ap-northeast-1.aws.amazon.com/authenticate?parameters=eyJ0eXBlIjoiRU5EX1VTRVIiLCJleHBpcmVzIjoiMTcyODE0NTMyMSIsImF3c0FjY291bnRJZCI6IjY0NzM1MDM0MDU1OCIsInVzZXJJZCI6InVuaWNoZW5AbWV0YWFnZS5jb20udHciLCJjYXRhbG9nU291cmNlIjoic3RhY2svRGVza3RvcCIsImZsZWV0UmVmIjoiZmxlZXQvRGVza3RvcCIsImFwcGxpY2F0aW9uSWQiOiIiLCJ1c2VyQ29udGV4dCI6IiIsIm1heFVzZXJEdXJhdGlvbkluU2VjcyI6IjU3NjAwIn0%3D&signature=I%2BAQogw4QwzUWr4Sgea0GdOTQin%2BfRFUL3hK2tVN%2BFY%3D
+
+
+生成as2 url
+----
+import json
+import boto3
+
+def lambda_handler(event, context):
+    appstream_client = boto3.client('appstream', region_name='ap-northeast-1')
+
+    # 從 Cognito 授權資訊中提取 email
+    if 'requestContext' in event and 'authorizer' in event['requestContext'] and 'claims' in event['requestContext']['authorizer']:
+        user_email = event['requestContext']['authorizer']['claims'].get('email', 'default_test_user@example.com')
+    else:
+        # 如果無法從 Cognito 提取 email，使用預設值
+        user_email = 'default_test_user@example.com'
+        print("Using default email:", user_email)
+
+    # 使用 email 作為 user_id
+    user_id = user_email
+    print(json.dumps(event))
+
+    # 從事件中獲取其他參數
+    stack_name = event.get('queryStringParameters', {}).get('stackName', 'Desktop')  # 默認為 'Desktop'
+    fleet_name = event.get('queryStringParameters', {}).get('fleetName', 'Desktop')  # 默認為 'Desktop'
+
+    try:
+        # 創建 Streaming URL
+        response = appstream_client.create_streaming_url(
+            StackName=stack_name,
+            FleetName=fleet_name,
+            UserId=user_id,
+            Validity=3600  # URL 有效期（秒）
+        )
+
+        # 獲取生成的 Streaming URL
+        streaming_url = response['StreamingURL']
+
+        print(f"Streaming URL generated for {user_id}: {streaming_url}")
+
+        # 返回 302 重定向到 Streaming URL
+        return {
+            'statusCode': 302,
+            'headers': {
+                'Location': streaming_url,  # 設置重定向目標 URL
+                'Access-Control-Allow-Origin': '*'  # 允許跨域
+            },
+            'body': ''
+        }
+
+    except Exception as e:
+        # 錯誤處理
+        print(f"Error generating streaming URL for {user_id}: {str(e)}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps({
+                'error': str(e)
+            })
+        }
+
+----
+git add .
+git commit -m "v1"
+git push
+
+
+git remote set-url origin https://jiahaoliu666@github.com/jiahaoliu666/amplify-as2-mfa.git
+
+@Qaz843162
+
+
+jiahaoliu@metaage.com.tw
+@Qaz843162
+jiahaoliu666
+
+ssh-keygen -t rsa -b 4096 -C "jiahaoliu@metaage.com.tw"
+
+The key fingerprint is:
+SHA256:gNrMbgXs10M1pqJtuwgPVqYYpJPE/b1mhvqp68rFufQ jiahaoliu@metaage.com.tw
+
+(base) hao@haoMacBook-Pro amplify-as2-mfa % cat ~/.ssh/id_rsa.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDcJdecaMPKAKtC2Q67i2tsP6fN6jUoqb95TbgyDQ9+3SLPL6nArlu/IgFJLHD/mnrEail1wpfcrHIjygNvBCqK0aTfgPaFLaBYZK4qCbwF90m0+fVG21r1VZybe24O46UTKySULiPOJYx2t8/OSqZjU4zS7DtQOhGqfbNgiIaiXf7S1WsYsUqftbfu+bfUOIpuUKocamWAfIV+wOhGtZ8UV7tv3hLyz4t0JgJ0nZ1N1IpYSZBjsW1Kh208hN55XmJSLruIcfkJ52Iqmu/HRi3P1BgCNprq5nT6F3H9w189C2CcKR/z9ujGRned/XvfpZwhZ34uZ3aaHrGc2s006AOjDZRYtOrkxxxf1ry/9kv4pbcLLI/0aPrpy/3Avj2WyDEpO8sqh0UAH9dk26usHeiV6rnFAtEypqDQLmz9mn557q5x7CNc+Qacu/nqIuRg/PRg026PY/x/6mik4gg8T9d2UavgT3gBruvfUTtzlbE2GpPN8NvVzjPWe46RHtSEHc3xmU1PVs89iUYWTw126S2gJR23Jy6F2UhKFiNqlwd6DBom7eeTOTSo1QFOYxWLkLzhSCmguQE3mrLNH+9XwbiCuCp8ztVqiLxfJX2QX0IvRg9NJWjqylY7xmSs4SlGZfO63n/ptX2IFaWWn5JF+To545TNNy2rmepaXI1GBrZDSw== jiahaoliu@metaage.com.tw
