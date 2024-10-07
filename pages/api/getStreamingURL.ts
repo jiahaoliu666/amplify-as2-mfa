@@ -45,3 +45,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ error: error.message || '生成串流 URL 時發生錯誤' });  
   }  
 }
+
+
