@@ -1,39 +1,5 @@
-// import { NextApiRequest, NextApiResponse } from 'next';  
-// import AWS from 'aws-sdk';  
-
-// AWS.config.update({ region: 'ap-northeast-1' });  
-
-// export default async function handler(req: NextApiRequest, res: NextApiResponse) {  
-//   const appstream = new AWS.AppStream();  
-
-//   // 從請求查詢獲取參數，並設置默認值  
-//   const userEmail = req.query.email || 'default_test_user@example.com';  
-//   const stackName = req.query.stackName || 'Desktop';  
-//   const fleetName = req.query.fleetName || 'Desktop';  
-
-//   try {  
-//     // 調用 createStreamingURL 並使用正確的參數名稱  
-//     const response = await appstream.createStreamingURL({  
-//       StackName: stackName as string,  // 確保將 StackName 正確傳遞及使用類型註解  
-//       FleetName: fleetName as string,  // 確保將 FleetName 正確傳遞及使用類型註解  
-//       UserId: userEmail as string,     // 確保將 UserId 正確傳遞及使用類型註解  
-//       Validity: 3600,  
-//     }).promise();  
-
-//     const streamingUrl = response.StreamingURL;  
-//     console.log(`Streaming URL generated for ${userEmail}: ${streamingUrl}`);  
-
-//     res.json({ streamingUrl }); // 返回 JSON 包含 URL  
-//   } catch (error) {  
-//     console.error(`Error generating streaming URL for ${userEmail}: ${(error as Error).message}`);  
-//     res.status(500).json({ error: (error as Error).message });  
-//   }  
-// }
-
 import { NextApiRequest, NextApiResponse } from 'next';  
 import AWS from 'aws-sdk';  
-
-AWS.config.update({ region: 'ap-northeast-1' });  
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {  
   if (req.method !== 'POST') {  
@@ -41,40 +7,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end(`Method ${req.method} Not Allowed`);  
   }  
 
-  const { accessKeyId, secretAccessKey, sessionToken, email } = req.body;  
+  const { email, credentials } = req.body;  
 
-  if (!accessKeyId || !secretAccessKey || !sessionToken || !email) {  
-    return res.status(400).json({ error: 'Missing required parameters' });  
-  }  
+  if (!email || !credentials) {  
+    console.error('缺少必要的參數 email 或 credentials');  
+    return res.status(400).json({ error: '缺少必要的參數' });  
+  }   
 
-  AWS.config.credentials = new AWS.Credentials(accessKeyId, secretAccessKey, sessionToken);  
+  try {   
+    // 配置 AWS SDK  
+    AWS.config.update({  
+      region: 'ap-northeast-1', // 設置實際區域  
+      accessKeyId: credentials.AccessKeyId,  
+      secretAccessKey: credentials.SecretKey,  
+      sessionToken: credentials.SessionToken,  
+    });  
 
-  const appstream = new AWS.AppStream();  
+    const appstream = new AWS.AppStream();  
 
-  const stackName = 'Desktop';  
-  const fleetName = 'Desktop';  
+    const stackName = req.query.stackName || 'Desktop';   
+    const fleetName = req.query.fleetName || 'Desktop';   
 
-  try {  
-    const { StreamingURL } = await appstream.createStreamingURL({  
-      StackName: stackName,  
-      FleetName: fleetName,  
+    // 調用 AWS 服務以生成 Streaming URL  
+    const response = await appstream.createStreamingURL({  
+      StackName: stackName as string,  
+      FleetName: fleetName as string,  
       UserId: email,  
       Validity: 3600,  
     }).promise();  
 
-    if (StreamingURL) {  
-      console.log(`Streaming URL generated for ${email}: ${StreamingURL}`);  
-      res.status(200).json({ streamingUrl: StreamingURL });  
-    } else {  
-      res.status(500).json({ error: 'No Streaming URL received' });  
-    }  
-  } catch (error: unknown) {  
-    if (error instanceof Error) {  
-      console.error(`Error generating streaming URL for ${email}: ${error.message}`);  
-      res.status(500).json({ error: error.message });  
-    } else {  
-      console.error('未預期的錯誤:', error);  
-      res.status(500).json({ error: '發生未知錯誤' });  
-    }  
+    const streamingUrl = response.StreamingURL;  
+    console.log(`Streaming URL 生成成功：${streamingUrl}`);  
+
+    res.json({ streamingUrl }); // 返回包含 Streaming URL 的 JSON  
+  } catch (error: any) {  
+    console.error(`生成串流 URL 發生錯誤, 電子郵件: ${email}`, error);  
+    res.status(500).json({ error: error.message || '生成串流 URL 時發生錯誤' });  
   }  
 }

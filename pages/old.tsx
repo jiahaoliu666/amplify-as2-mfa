@@ -13,102 +13,57 @@ cognitoUserPoolsTokenProvider.setKeyValueStorage(defaultStorage);
 
 export default function Home() {  
   const [userEmail, setUserEmail] = useState<string | null>(null);  
-  const [identityId, setIdentityId] = useState<string | null>(null);  
+  const [credentials, setCredentials] = useState<any>(null);  
 
   const getSession = async () => {  
     try {  
       const session = await fetchAuthSession();  
       console.log('完整的 session:', session);  
-      if (session && session.tokens) {  
-        const idToken = session.tokens.idToken;  
-
-        // 確保從 token 中獲取字符串  
-        const idTokenString: string | null = (idToken && (idToken as any).getJwtToken) ? (idToken as any).getJwtToken() : null;  
-
-        if (idTokenString) {  
-          console.log('idToken as string:', idTokenString);  
-          await getIdFromCognito(idTokenString);  
-        }  
+      if (session && session.credentials) {  
+        // 確保從 session 中正確提取憑證  
+        const credentialsData = session.credentials;  
+        console.log('提取的憑證:', credentialsData);  
+        setCredentials(credentialsData);  
       } else {  
-        console.warn('Session 或 tokens 未定義');  
+        console.warn('Session 或 credentials 未定義');  
       }  
     } catch (error) {  
       console.error('獲取授權 session 出錯:', error);  
     }  
   };  
 
-  const getIdFromCognito = async (idToken: string) => {  
-    try {  
-      const response = await fetch('/api/getId', {  
-        method: 'POST',  
-        headers: {  
-          'Content-Type': 'application/json',  
-        },  
-        body: JSON.stringify({  
-          IdentityPoolId: 'ap-northeast-2:844c51eb-ddfa-4c15-8042-e8cf1b0487fb',  
-          LoginProvider: 'cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_CNXJJCt2G',  
-          IdToken: idToken,  
-        }),  
-      });  
-
-      if (response.ok) {  
-        const data = await response.json();  
-        console.log('GetId Response:', data);  
-        if (data.IdentityId) {  
-          setIdentityId(data.IdentityId);  
-          await getCredentialsFromCognito(data.IdentityId, idToken);  
-        }  
-      } else {  
-        const errorData = await response.json();  
-        console.error('GetId API 錯誤:', errorData);  
-      }  
-    } catch (error) {  
-      console.error('調用 GetId API 出錯:', error);  
-    }  
-  };  
-
-  const getCredentialsFromCognito = async (identityId: string, idToken: string) => {  
-    try {  
-      const response = await fetch('/api/getCredentials', {  
-        method: 'POST',  
-        headers: {  
-          'Content-Type': 'application/json',  
-        },  
-        body: JSON.stringify({  
-          IdentityId: identityId,  
-          Logins: {  
-            'cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_CNXJJCt2G': idToken,  
-          },  
-        }),  
-      });  
-
-      if (response.ok) {  
-        const credentialsData = await response.json();  
-        console.log('GetCredentials Response:', credentialsData);  
-      } else {  
-        const errorData = await response.json();  
-        console.error('GetCredentials API 錯誤:', errorData);  
-      }  
-    } catch (error) {  
-      console.error('調用 GetCredentials API 出錯:', error);  
-    }  
-  };  
-
   useEffect(() => {  
     if (userEmail) {  
+      console.log('用戶電子郵件在 useEffect 中:', userEmail);  
       getSession();  
+    } else {  
+      console.log('用戶電子郵件未設置');  
     }  
   }, [userEmail]);  
 
   const handleLogin = async () => {  
-    if (userEmail) {  
+    if (userEmail && credentials) {  
+      console.log('用戶電子郵件:', userEmail);  
+      console.log('傳入的 Credentials:', credentials);  
       try {  
-        const response = await fetch(`/api/getStreamingURL?email=${encodeURIComponent(userEmail)}`, {  
-          method: 'GET',  
+        const response = await fetch('/api/getStreamingURL', {  
+          method: 'POST',  
+          headers: {  
+            'Content-Type': 'application/json',  
+          },  
+          body: JSON.stringify({  
+            email: userEmail,  
+            credentials: {  
+              AccessKeyId: credentials.AccessKeyId,  
+              SecretKey: credentials.SecretKey,  
+              SessionToken: credentials.SessionToken,  
+            },  
+          }),  
         });  
 
         if (response.ok) {  
           const data = await response.json();  
+          console.log('生成的 Streaming URL:', data.streamingUrl);  
           window.location.href = data.streamingUrl;  
         } else {  
           const data = await response.json();  
@@ -117,6 +72,10 @@ export default function Home() {
       } catch (error) {  
         console.error('獲取串流 URL 失敗:', error);  
       }  
+    } else {  
+      console.error('用戶電子郵件或憑證缺失');  
+      console.log('當前用戶電子郵件:', userEmail);  
+      console.log('當前憑證:', credentials);  
     }  
   };  
 
@@ -124,7 +83,6 @@ export default function Home() {
     localStorage.removeItem('authToken');  
     sessionStorage.clear();  
     setUserEmail(null);  
-    setIdentityId(null);  
     signOut();  
   };  
 
@@ -137,7 +95,7 @@ export default function Home() {
             setUserEmail(email);  
           }  
         }  
-        
+
         return (  
           <main>  
             <p>User email: {userEmail !== null ? userEmail : 'Loading...'}</p>  
