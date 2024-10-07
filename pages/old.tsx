@@ -21,8 +21,6 @@ export default function Home() {
       console.log('完整的 session:', session);  
       if (session && session.tokens) {  
         const idToken = session.tokens.idToken;  
-        
-        console.log('Raw idToken:', idToken);  
 
         // 確保從 token 中獲取字符串  
         const idTokenString: string | null = (idToken && (idToken as any).getJwtToken) ? (idToken as any).getJwtToken() : null;  
@@ -30,8 +28,6 @@ export default function Home() {
         if (idTokenString) {  
           console.log('idToken as string:', idTokenString);  
           await getIdFromCognito(idTokenString);  
-        } else {  
-          console.warn('ID Token 未能轉換為字符串');  
         }  
       } else {  
         console.warn('Session 或 tokens 未定義');  

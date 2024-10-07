@@ -22,8 +22,7 @@ export default function Home() {
       if (session && session.tokens) {  
         const idToken = session.tokens.idToken;  
 
-        // 確保從 token 中獲取字符串  
-        const idTokenString: string | null = (idToken && (idToken as any).getJwtToken) ? (idToken as any).getJwtToken() : null;  
+        const idTokenString = (idToken && (idToken as any).getJwtToken) ? (idToken as any).getJwtToken() : null;  
 
         if (idTokenString) {  
           console.log('idToken as string:', idTokenString);  
@@ -32,8 +31,12 @@ export default function Home() {
       } else {  
         console.warn('Session 或 tokens 未定義');  
       }  
-    } catch (error) {  
-      console.error('獲取授權 session 出錯:', error);  
+    } catch (error: unknown) {  
+      if (error instanceof Error) {  
+        console.error('獲取授權 session 出錯:', error.message);  
+      } else {  
+        console.error('獲取授權 session 出錯:', error);  
+      }  
     }  
   };  
 
@@ -59,11 +62,14 @@ export default function Home() {
           await getCredentialsFromCognito(data.IdentityId, idToken);  
         }  
       } else {  
-        const errorData = await response.json();  
-        console.error('GetId API 錯誤:', errorData);  
+        console.error('GetId API 錯誤:', await response.text());  
       }  
-    } catch (error) {  
-      console.error('調用 GetId API 出錯:', error);  
+    } catch (error: unknown) {  
+      if (error instanceof Error) {  
+        console.error('調用 GetId API 出錯:', error.message);  
+      } else {  
+        console.error('調用 GetId API 出錯:', error);  
+      }  
     }  
   };  
 
@@ -85,12 +91,36 @@ export default function Home() {
       if (response.ok) {  
         const credentialsData = await response.json();  
         console.log('GetCredentials Response:', credentialsData);  
+
+        const { AccessKeyId, SecretKey, SessionToken } = credentialsData.Credentials;  
+        await fetch('/api/getStreamingURL', {  
+          method: 'POST',  
+          headers: { 'Content-Type': 'application/json' },  
+          body: JSON.stringify({  
+            accessKeyId: AccessKeyId,  
+            secretAccessKey: SecretKey,  
+            sessionToken: SessionToken,  
+            email: userEmail   
+          }),  
+        }).then(async (res) => {  
+          if (res.ok) {  
+            const data = await res.json();  
+            console.log(`Streaming URL received: ${data.streamingUrl}`);  
+            window.location.href = data.streamingUrl;  
+          } else {  
+            console.error('錯誤:', await res.text());  
+          }  
+        });  
+
       } else {  
-        const errorData = await response.json();  
-        console.error('GetCredentials API 錯誤:', errorData);  
+        console.error('GetCredentials API 錯誤:', await response.text());  
       }  
-    } catch (error) {  
-      console.error('調用 GetCredentials API 出錯:', error);  
+    } catch (error: unknown) {  
+      if (error instanceof Error) {  
+        console.error('調用 GetCredentials API 出錯:', error.message);  
+      } else {  
+        console.error('調用 GetCredentials API 出錯:', error);  
+      }  
     }  
   };  
 
@@ -103,19 +133,13 @@ export default function Home() {
   const handleLogin = async () => {  
     if (userEmail) {  
       try {  
-        const response = await fetch(`/api/getStreamingURL?email=${encodeURIComponent(userEmail)}`, {  
-          method: 'GET',  
-        });  
-
-        if (response.ok) {  
-          const data = await response.json();  
-          window.location.href = data.streamingUrl;  
+        await getSession();   
+      } catch (error: unknown) {  
+        if (error instanceof Error) {  
+          console.error('獲取串流 URL 失敗:', error.message);  
         } else {  
-          const data = await response.json();  
-          console.error('錯誤:', data.error);  
+          console.error('獲取串流 URL 失敗:', error);  
         }  
-      } catch (error) {  
-        console.error('獲取串流 URL 失敗:', error);  
       }  
     }  
   };  
