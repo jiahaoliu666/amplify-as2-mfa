@@ -6,12 +6,14 @@ import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
 import { defaultStorage } from 'aws-amplify/utils';  
 import outputs from '../amplify_outputs.json';  
 import { fetchAuthSession } from 'aws-amplify/auth';  
+import { useRouter } from 'next/router';  
 
 // 配置 AWS Amplify  
 Amplify.configure(outputs);  
 cognitoUserPoolsTokenProvider.setKeyValueStorage(defaultStorage);  
 
-export default function Home() {  
+export default function Login() {  
+  const router = useRouter();  
   const [userEmail, setUserEmail] = useState<string | null>(null);  
   const [credentials, setCredentials] = useState<any>(null);  
 
@@ -20,9 +22,13 @@ export default function Home() {
       const session = await fetchAuthSession();  
       console.log('完整的 session:', session);  
       if (session && session.credentials) {  
-        // 確保從 session 中正確提取憑證  
         const credentialsData = session.credentials;  
         console.log('提取的憑證:', credentialsData);  
+        // 檢查憑證的結構  
+        if (!credentialsData.accessKeyId || !credentialsData.secretAccessKey || !credentialsData.sessionToken) {  
+          console.error('憑證缺少必要的屬性');  
+          return;  
+        }  
         setCredentials(credentialsData);  
       } else {  
         console.warn('Session 或 credentials 未定義');  
@@ -54,9 +60,9 @@ export default function Home() {
           body: JSON.stringify({  
             email: userEmail,  
             credentials: {  
-              AccessKeyId: credentials.AccessKeyId,  
-              SecretKey: credentials.SecretKey,  
-              SessionToken: credentials.SessionToken,  
+              accessKeyId: credentials.accessKeyId,  
+              secretAccessKey: credentials.secretAccessKey,  
+              sessionToken: credentials.sessionToken,  
             },  
           }),  
         });  
@@ -97,15 +103,18 @@ export default function Home() {
         }  
 
         return (  
-          <main>  
-            <p>User email: {userEmail !== null ? userEmail : 'Loading...'}</p>  
-            <div className="flex flex-col space-y-4">  
-              <button onClick={handleLogin} className="btn">  
-                登入並獲取串流 URL  
-              </button>  
-              <button onClick={() => handleSignOut(signOut)} className="btn">  
-                登出  
-              </button>  
+          <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100">  
+            <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">  
+              <h1 className="text-2xl font-bold text-center mb-6">歡迎回來！</h1>  
+              <p className="text-center text-gray-600 mb-4">用戶電子郵件: {userEmail !== null ? userEmail : '加載中...'}</p>  
+              <div className="flex flex-col space-y-6">  
+                <button onClick={handleLogin} className="btn bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">  
+                  登入並獲取串流 URL  
+                </button>  
+                <button onClick={() => handleSignOut(signOut)} className="btn bg-red-500 text-white py-2 rounded hover:bg-red-600 transition">  
+                  登出  
+                </button>  
+              </div>  
             </div>  
           </main>  
         );  
@@ -113,3 +122,7 @@ export default function Home() {
     </Authenticator>  
   );  
 }
+
+
+
+
