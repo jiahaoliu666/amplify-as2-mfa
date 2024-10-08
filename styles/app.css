@@ -13,13 +13,16 @@ main {
   display: flex;  
   flex-direction: column;  
   align-items: stretch;  
+  width: 90%; /* 使主內容更靈活以適應小屏幕 */  
+  max-width: 400px; /* 最大寬度，以保持設計整潔 */  
+  margin: auto; /* 自動邊距使其居中 */  
 }  
 
 button {  
   border-radius: 12px;  
   border: 1px solid rgba(26, 26, 26, 0.5);  
   padding: 0.8em 1.5em;  
-  font-size: 1.1em;  
+  font-size: 1em; /* 更小的字體大小以適應小屏幕 */  
   font-weight: 600;  
   font-family: inherit;  
   background-color: #1a1a1a;  
@@ -27,7 +30,8 @@ button {
   cursor: pointer;  
   transition: all 0.3s ease;  
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);  
-  margin: 0 1rem; /* 添加左右邊距 */  
+  margin: 0.5rem 0; /* 垂直邊距 */   
+  width: 100%; /* 使按鈕寬度隨容器變化 */  
 }  
 
 button:hover {  
@@ -36,9 +40,20 @@ button:hover {
   transform: translateY(-2px);  
 }  
 
-button:focus,  
-button:focus-visible {  
-  outline: 4px auto -webkit-focus-ring-color;  
+/* 媒體查詢 */  
+@media (max-width: 600px) {  
+  button {  
+    padding: 0.6em 1.2em; /* 在小屏幕上減少按鈕內邊距 */  
+    font-size: 0.9em; /* 調整字體大小以適應小屏幕 */  
+  }  
+
+  main {  
+    width: 95%; /* 在小屏幕上使主內容更寬 */  
+  }  
+
+  li {  
+    padding: 8px 12px; /* 調整列表項的內邊距 */  
+  }  
 }  
 
 ul {  

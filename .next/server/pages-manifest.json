@@ -3,5 +3,7 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/login": "pages/login.js",
-  "/": "pages/index.js"
+  "/api/getAppStreamingURL": "pages/api/getAppStreamingURL.js",
+  "/": "pages/index.js",
+  "/api/getWebStreamingURL": "pages/api/getWebStreamingURL.js"
 }
