@@ -95,6 +95,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const streamingUrl = response.StreamingURL;  
     // console.log(`APP Streaming URL 生成成功：${streamingUrl}`);  
 
+    const appStreamURL = `amazonappstream:base64encoded(Buffer.from(streamingUrl).toString('base64'))`
+
     res.json({ streamingUrl });  
   } catch (error) {  
     if (error instanceof Error) {  
