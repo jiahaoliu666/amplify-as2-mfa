@@ -2,8 +2,6 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/login": "pages/login.js",
-  "/api/getAppStreamingURL": "pages/api/getAppStreamingURL.js",
   "/": "pages/index.js",
-  "/api/getWebStreamingURL": "pages/api/getWebStreamingURL.js"
+  "/login": "pages/login.js"
 }
